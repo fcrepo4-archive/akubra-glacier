@@ -11,9 +11,8 @@
   	</dependency>
   	<dependency>
   		<groupId>org.akubraproject</groupId>
-  		<artifactId>akubra</artifactId>
+  		<artifactId>akubra-core</artifactId>
   		<version>0.4.0</version>
-  		<type>pom</type>
   	</dependency>
   </dependencies>
 </project>
