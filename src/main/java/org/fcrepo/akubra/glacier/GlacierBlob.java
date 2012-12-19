@@ -14,17 +14,22 @@ import org.akubraproject.MissingBlobException;
 import org.akubraproject.impl.AbstractBlob;
 import org.akubraproject.impl.StreamManager;
 
+import com.amazonaws.services.glacier.AmazonGlacierClient;
+
 public class GlacierBlob extends AbstractBlob {
 
 	private URI blobId;
 	private StreamManager manager;
+	private GlacierBlobStoreConnection connection;
+	private AmazonGlacierClient client;
 
 	public GlacierBlob(GlacierBlobStoreConnection connection, URI blobId, StreamManager manager) {
 		super(connection, blobId);
 		
+		this.connection = connection;
+		this.client = connection.getClient();
 		this.blobId = blobId;
 		this.manager = manager;
-		// TODO Auto-generated constructor stub
 	}
 
 	public void delete() throws IOException {
@@ -57,7 +62,14 @@ public class GlacierBlob extends AbstractBlob {
 
 	public OutputStream openOutputStream(long arg0, boolean arg1)
 			throws IOException, DuplicateBlobException {
-	    return manager.manageOutputStream(getConnection(), new GlacierOutputStream(connection, blobId));
+		ensureOpen();
+		
+		OutputStream os = new GlacierMultipartBufferedOutputStream(client, getVault(), blobId);
+	    return manager.manageOutputStream(getConnection(), os);
+	}
+	
+	private String getVault() {
+		return connection.getVault();
 	}
 
 }
