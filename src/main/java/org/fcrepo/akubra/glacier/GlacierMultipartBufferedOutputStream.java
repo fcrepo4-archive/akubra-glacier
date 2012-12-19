@@ -29,7 +29,6 @@ public class GlacierMultipartBufferedOutputStream extends OutputStream {
 
 
 	public GlacierMultipartBufferedOutputStream(AmazonGlacierClient client, String vault, URI blobId) {
-		// TODO Auto-generated constructor stub
 		this.client = client;
 		this.blobId = blobId;
 		this.vault = vault;
