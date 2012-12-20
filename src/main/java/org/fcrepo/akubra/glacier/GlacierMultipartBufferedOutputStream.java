@@ -11,6 +11,7 @@ import java.util.List;
 import com.amazonaws.services.glacier.AmazonGlacierClient;
 import com.amazonaws.services.glacier.TreeHashGenerator;
 import com.amazonaws.services.glacier.model.CompleteMultipartUploadRequest;
+import com.amazonaws.services.glacier.model.CompleteMultipartUploadResult;
 import com.amazonaws.services.glacier.model.InitiateMultipartUploadRequest;
 import com.amazonaws.services.glacier.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.glacier.model.UploadMultipartPartRequest;
@@ -25,6 +26,7 @@ public class GlacierMultipartBufferedOutputStream extends OutputStream {
 	private AmazonGlacierClient client;
 	private String upload_id;
 	private String vault;
+	private String archiveId = null;
     List<byte[]> binaryChecksums = new LinkedList<byte[]>();
 
 
@@ -34,6 +36,10 @@ public class GlacierMultipartBufferedOutputStream extends OutputStream {
 		this.vault = vault;
 		this.buffer = new byte[ioBufferSize];
 		initiateMultipartUpload();
+	}
+	
+	public String getArchiveId() {
+		return this.archiveId;
 	}
 	
 	private void initiateMultipartUpload() {
@@ -52,7 +58,8 @@ public class GlacierMultipartBufferedOutputStream extends OutputStream {
 		     .withArchiveSize(Long.toString(currentObjectSize))
 		     .withVaultName(vault)
 		     .withChecksum(getUploadChecksum());
-		client.completeMultipartUpload(request);
+		CompleteMultipartUploadResult response = client.completeMultipartUpload(request);
+		this.archiveId = response.getArchiveId();
 	}
     private String getUploadChecksum() {
     	return TreeHashGenerator.calculateTreeHash(binaryChecksums);

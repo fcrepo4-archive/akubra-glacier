@@ -14,20 +14,16 @@ import com.amazonaws.services.glacier.model.GetJobOutputResult;
 import com.amazonaws.services.glacier.model.InitiateJobRequest;
 import com.amazonaws.services.glacier.model.InitiateJobResult;
 import com.amazonaws.services.glacier.model.JobParameters;
-import com.amazonaws.services.glacier.transfer.JobStatusMonitor;
-import com.amazonaws.util.json.JSONArray;
-import com.amazonaws.util.json.JSONException;
-import com.amazonaws.util.json.JSONObject;
 
 public class GlacierInputStream extends InputStream {
 	private AmazonGlacierClient client;
-	private URI blobId;
+	private String archiveId;
 	private String vault;
 	private BufferedInputStream input;
 	
-	public GlacierInputStream(AmazonGlacierClient client, String vault, URI blobId) {
+	public GlacierInputStream(AmazonGlacierClient client, String vault, String archiveId) {
 		this.client = client;
-		this.blobId = blobId;
+		this.archiveId = archiveId;
 		this.vault = vault;
 	}
 	
@@ -67,7 +63,7 @@ public class GlacierInputStream extends InputStream {
 
 	private GetJobOutputResult initiateDownloadJob() {
     		JobParameters jobParameters = new JobParameters()
-    			.withArchiveId(this.getArchiveId())
+    			.withArchiveId(archiveId)
     			.withType("archive-retrieval");
     		InitiateJobResult archiveRetrievalResult =
     			client.initiateJob(new InitiateJobRequest()
@@ -98,47 +94,6 @@ public class GlacierInputStream extends InputStream {
 		
 	}
 
-	private String getArchiveId() {
 
-		JobParameters jobParameters = new JobParameters()
-			.withType("inventory-retrieval");
-		InitiateJobResult archiveRetrievalResult =
-			client.initiateJob(new InitiateJobRequest()
-				.withVaultName(vault)
-				.withJobParameters(jobParameters));
-		String jobId = archiveRetrievalResult.getJobId();
-
-		waitForJobToComplete(jobId);
-		GetJobOutputResult jobOutputResult = client.getJobOutput(new GetJobOutputRequest()
-			.withVaultName(vault)
-			.withJobId(jobId));
-		
-		InputStream is = jobOutputResult.getBody();
-		
-		try {
-			byte[] bytes = null;
-			try {
-				bytes = new byte[is.available()];
-				is.read(bytes);
-			} catch (IOException e) {
-			}
-			String resultString = new String(bytes);
-			JSONObject json = new JSONObject(resultString);
-			JSONArray archives = json.getJSONArray("ArchiveList");
-			
-			for ( int i = 0; i < archives.length(); i++ ) {
-				JSONObject j = archives.getJSONObject(i);
-				String description = j.getString("ArchiveDescription");
-				if(description.equals(blobId.toString())) {
-					return j.getString("ArchiveId");
-				}
-				
-			}
-			
-		} catch (JSONException e) {
-		}
-		
-		return "";
-	}
 
 }
