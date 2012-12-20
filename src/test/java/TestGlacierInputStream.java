@@ -2,6 +2,7 @@
 
 import static org.junit.Assert.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -16,6 +17,7 @@ import com.amazonaws.auth.PropertiesCredentials;
 import com.amazonaws.services.glacier.AmazonGlacierClient;
 import com.amazonaws.services.glacier.model.CreateVaultRequest;
 import com.amazonaws.services.glacier.model.CreateVaultResult;
+import com.amazonaws.services.glacier.model.DeleteArchiveRequest;
 
 public class TestGlacierInputStream {
 
@@ -24,30 +26,41 @@ public class TestGlacierInputStream {
 		PropertiesCredentials credentials = new PropertiesCredentials(TestGlacierInputStream.class.getResourceAsStream("AwsCredentials.properties"));
 		AmazonGlacierClient client = new AmazonGlacierClient(credentials);
 		client.setEndpoint("http://localhost:3000/");
-	
+
 		CreateVaultRequest request = new CreateVaultRequest()
-			.withAccountId("-")
-			.withVaultName("akubra-glacier-vault");
-		
+		.withAccountId("-")
+		.withVaultName("akubra-glacier-vault");
 
-	    client.createVault(request);
-		
-	    OutputStream s = new GlacierMultipartBufferedOutputStream(client, "akubra-glacier-vault", URI.create("info:fedora/object:pid/dsID.0"));
-		
-		//byte[] b = new byte[1024*1024];
-		//new Random().nextBytes(b);
-	    
-		
-		s.write("1234567890".getBytes("ASCII"));
+
+		client.createVault(request);
+
+		GlacierMultipartBufferedOutputStream s = new GlacierMultipartBufferedOutputStream(client, "akubra-glacier-vault", URI.create("info:fedora/object:pid/dsID.0"));
+
+		byte[] b = new byte[1024*1024];
+		new Random().nextBytes(b);
+		//byte[] b = "xxxxxxxxxx".getBytes();
+		s.write(b);
 		s.close();
-		
-		InputStream s_in = new GlacierInputStream(client, "akubra-glacier-vault", URI.create("info:fedora/object:pid/dsID.0"));
 
-		byte[] b1 = new byte[10];
-		s_in.read(b1);
+		InputStream s_in = new GlacierInputStream(client, "akubra-glacier-vault", s.getArchiveId());
+
+		byte[] b1 = new byte[b.length];
+		ByteArrayOutputStream b2 = new ByteArrayOutputStream();
+		int bytesRead = 0;
+		do {
+			bytesRead = s_in.read(b1);
+			System.out.println("Read" + bytesRead + "bytes");
+			if (bytesRead <= 0) break;
+			b2.write(b1, 0, bytesRead);
+		} while (bytesRead > 0);
+
 		s_in.close();
-		
-		assertArrayEquals("1234567890".getBytes("ASCII"), b1);
+
+		assertArrayEquals(b, b2.toByteArray());
+
+		client.deleteArchive(new DeleteArchiveRequest()
+		.withVaultName("akubra-glacier-vault")
+		.withArchiveId(s.getArchiveId()));
 	}
 
 }
