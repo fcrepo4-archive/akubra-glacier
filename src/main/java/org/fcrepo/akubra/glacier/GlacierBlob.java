@@ -26,7 +26,7 @@ public class GlacierBlob extends AbstractBlob {
 		super(connection, blobId);
 		
 		this.connection = connection;
-		this.client = connection.getClient();
+		this.client = connection.getGlacierClient();
 		this.blobId = blobId;
 		this.manager = manager;
 	}

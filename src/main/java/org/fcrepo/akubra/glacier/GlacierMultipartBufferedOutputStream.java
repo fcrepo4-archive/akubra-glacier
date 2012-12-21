@@ -23,15 +23,17 @@ public class GlacierMultipartBufferedOutputStream extends OutputStream {
     private int bufferCurrentPos = 0;
     private URI blobId;
     private long currentObjectSize = 0;
-	private AmazonGlacierClient client;
+	private AmazonGlacierClient glacier;
 	private String upload_id;
 	private String vault;
 	private String archiveId = null;
     List<byte[]> binaryChecksums = new LinkedList<byte[]>();
+	private GlacierBlobStoreConnection connection;
 
 
-	public GlacierMultipartBufferedOutputStream(AmazonGlacierClient client, String vault, URI blobId) {
-		this.client = client;
+	public GlacierMultipartBufferedOutputStream(GlacierBlobStoreConnection connection, String vault, URI blobId) {
+		this.connection = connection;
+		this.glacier = connection.getGlacierClient();
 		this.blobId = blobId;
 		this.vault = vault;
 		this.buffer = new byte[ioBufferSize];
@@ -47,7 +49,7 @@ public class GlacierMultipartBufferedOutputStream extends OutputStream {
 			.withArchiveDescription(blobId.toString())
 			.withPartSize(Integer.toString(ioBufferSize))
 			.withVaultName(vault);
-		InitiateMultipartUploadResult result = client.initiateMultipartUpload(request);
+		InitiateMultipartUploadResult result = glacier.initiateMultipartUpload(request);
 		
 		this.upload_id = result.getUploadId();
 	}
@@ -58,7 +60,7 @@ public class GlacierMultipartBufferedOutputStream extends OutputStream {
 		     .withArchiveSize(Long.toString(currentObjectSize))
 		     .withVaultName(vault)
 		     .withChecksum(getUploadChecksum());
-		CompleteMultipartUploadResult response = client.completeMultipartUpload(request);
+		CompleteMultipartUploadResult response = glacier.completeMultipartUpload(request);
 		this.archiveId = response.getArchiveId();
 	}
     private String getUploadChecksum() {
@@ -105,7 +107,7 @@ public class GlacierMultipartBufferedOutputStream extends OutputStream {
         			.withBody(is)
         			.withChecksum(checksum);
         	
-            client.uploadMultipartPart(request);
+            glacier.uploadMultipartPart(request);
             
             currentObjectSize += bufferCurrentPos;
             bufferCurrentPos = 0;

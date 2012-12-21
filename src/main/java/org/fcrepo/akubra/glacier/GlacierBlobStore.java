@@ -8,19 +8,26 @@ import javax.transaction.Transaction;
 
 import org.akubraproject.BlobStoreConnection;
 import org.akubraproject.impl.AbstractBlobStore;
+import org.akubraproject.impl.StreamManager;
+
+import com.amazonaws.services.glacier.AmazonGlacierClient;
 
 public class GlacierBlobStore extends AbstractBlobStore {
 
-	protected GlacierBlobStore(URI id) {
+	private AmazonGlacierClient glacier;
+	private String vault;
+	private final StreamManager manager = new StreamManager();
+
+	protected GlacierBlobStore(URI id, AmazonGlacierClient glacier, String vault) {
 		super(id);
-		// TODO Auto-generated constructor stub
+		this.glacier = glacier;
+		this.vault = vault;
 	}
 
 	public BlobStoreConnection openConnection(Transaction arg0,
 			Map<String, String> arg1) throws UnsupportedOperationException,
 			IOException {
-		// TODO Auto-generated method stub
-		return null;
+	    return new GlacierBlobStoreConnection(this, glacier, vault, manager);
 	}
 
 }

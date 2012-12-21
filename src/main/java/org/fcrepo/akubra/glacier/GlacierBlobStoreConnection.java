@@ -30,14 +30,14 @@ import com.amazonaws.util.json.JSONObject;
 
 public class GlacierBlobStoreConnection extends AbstractBlobStoreConnection {
 
-	public GlacierBlobStoreConnection(BlobStore owner) {
-		super(owner);
-		createInitialVault();
-	}
+	private AmazonGlacierClient glacier;
+	private String vault;
 
-	public GlacierBlobStoreConnection(BlobStore owner,
+	public GlacierBlobStoreConnection(BlobStore owner, AmazonGlacierClient glacier, String vault,
 			StreamManager streamManager) {
 		super(owner, streamManager);
+		this.glacier = glacier; 
+		this.vault = vault;
 		
 		createInitialVault();
 	}
