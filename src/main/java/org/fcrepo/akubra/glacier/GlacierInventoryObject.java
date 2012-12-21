@@ -33,6 +33,15 @@ public class GlacierInventoryObject {
 		}
 	}
 	
+	public long getSize() {
+		try {
+			return properties.getLong("Size");
+		} catch (JSONException e) {
+			e.printStackTrace();
+			return 0;
+		}
+	}
+	
 	public URI getBlobId() {
 		try {
 			return URI.create(properties.getString("ArchiveDescription"));
