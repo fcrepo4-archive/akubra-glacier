@@ -1,23 +1,26 @@
 package org.fcrepo.akubra.glacier;
 
 import java.net.URI;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import com.amazonaws.services.glacier.AmazonGlacierClient;
 import com.amazonaws.util.json.JSONException;
 import com.amazonaws.util.json.JSONObject;
 
 public class GlacierInventoryObject {
-	private AmazonGlacierClient glacier;
 	private JSONObject properties;
 	private String archiveId;
+	private Long size;
 
-	public GlacierInventoryObject(AmazonGlacierClient glacier, JSONObject properties) {
-		this.glacier = glacier;
+	public GlacierInventoryObject(JSONObject properties) {
 		this.properties = properties;
 	}
 	
-	public GlacierInventoryObject(AmazonGlacierClient glacier, String archiveId) {
+	public GlacierInventoryObject(String archiveId, Long size) {
 		this.archiveId = archiveId;
+		this.size = size;
 	}
 
 	public String getArchiveId() {
@@ -33,7 +36,25 @@ public class GlacierInventoryObject {
 		}
 	}
 	
+	public Date getCreationDate() {
+
+		try {
+			String creationDate = properties.getString("CreationDate");
+			return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse(creationDate);
+		} catch (JSONException e) {
+			e.printStackTrace();
+			return null;
+		} catch (ParseException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
 	public long getSize() {
+		if(this.size != null) {
+			return this.size;
+		}
+		
 		try {
 			return properties.getLong("Size");
 		} catch (JSONException e) {
@@ -42,12 +63,16 @@ public class GlacierInventoryObject {
 		}
 	}
 	
-	public URI getBlobId() {
+	public String getArchiveDescription() {
 		try {
-			return URI.create(properties.getString("ArchiveDescription"));
+			return properties.getString("ArchiveDescription");
 		} catch (JSONException e) {
 			e.printStackTrace();
 			return null;
 		}
+	}
+	
+	public URI getBlobId() {
+		return URI.create(getArchiveDescription());
 	}
 }

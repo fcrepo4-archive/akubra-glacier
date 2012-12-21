@@ -72,7 +72,7 @@ public class GlacierMultipartBufferedOutputStream extends OutputStream {
 		this.archiveId = response.getArchiveId();
 		
 		if(connection != null) {
-			connection.getGlacierInventoryManager().put(blobId, new GlacierInventoryObject(glacier, this.archiveId));
+			connection.getGlacierInventoryManager().put(blobId, new GlacierInventoryObject(this.archiveId, currentObjectSize));
 		}
 	}
     private String getUploadChecksum() {

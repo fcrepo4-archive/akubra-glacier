@@ -103,7 +103,7 @@ public class GlacierInventoryManager extends HashMap<URI, GlacierInventoryObject
 		
         	for ( int i = 0; i < archives.length(); i++ ) {
         		JSONObject j = archives.getJSONObject(i);
-        		GlacierInventoryObject gio = new GlacierInventoryObject(glacier, j);
+        		GlacierInventoryObject gio = new GlacierInventoryObject(j);
             	new_hash.put(URI.create(j.getString("ArchiveDescription")), gio);
         	}
 		
