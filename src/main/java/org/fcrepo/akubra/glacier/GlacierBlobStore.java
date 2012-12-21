@@ -18,7 +18,7 @@ public class GlacierBlobStore extends AbstractBlobStore {
 	private String vault;
 	private final StreamManager manager = new StreamManager();
 
-	protected GlacierBlobStore(URI id, AmazonGlacierClient glacier, String vault) {
+	public GlacierBlobStore(URI id, AmazonGlacierClient glacier, String vault) {
 		super(id);
 		this.glacier = glacier;
 		this.vault = vault;
