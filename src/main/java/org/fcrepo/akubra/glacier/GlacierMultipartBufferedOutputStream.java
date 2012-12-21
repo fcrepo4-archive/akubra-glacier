@@ -40,6 +40,14 @@ public class GlacierMultipartBufferedOutputStream extends OutputStream {
 		initiateMultipartUpload();
 	}
 	
+	public GlacierMultipartBufferedOutputStream(AmazonGlacierClient glacier, String vault, URI blobId) {
+		this.glacier = glacier;
+		this.blobId = blobId;
+		this.vault = vault;
+		this.buffer = new byte[ioBufferSize];
+		initiateMultipartUpload();
+	}
+	
 	public String getArchiveId() {
 		return this.archiveId;
 	}
@@ -63,7 +71,9 @@ public class GlacierMultipartBufferedOutputStream extends OutputStream {
 		CompleteMultipartUploadResult response = glacier.completeMultipartUpload(request);
 		this.archiveId = response.getArchiveId();
 		
-		connection.getGlacierInventoryManager().put(blobId, new GlacierInventoryObject(glacier, this.archiveId));
+		if(connection != null) {
+			connection.getGlacierInventoryManager().put(blobId, new GlacierInventoryObject(glacier, this.archiveId));
+		}
 	}
     private String getUploadChecksum() {
     	return TreeHashGenerator.calculateTreeHash(binaryChecksums);
