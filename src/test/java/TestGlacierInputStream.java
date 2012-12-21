@@ -49,7 +49,6 @@ public class TestGlacierInputStream {
 		int bytesRead = 0;
 		do {
 			bytesRead = s_in.read(b1);
-			System.out.println("Read" + bytesRead + "bytes");
 			if (bytesRead <= 0) break;
 			b2.write(b1, 0, bytesRead);
 		} while (bytesRead > 0);
