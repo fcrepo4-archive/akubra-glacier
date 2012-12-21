@@ -58,17 +58,23 @@ public class GlacierBlob extends AbstractBlob {
 	public InputStream openInputStream() throws IOException,
 			MissingBlobException {
 		ensureOpen();
-		
+
+	    if (!exists())
+	      throw new MissingBlobException(getId());
+	    
 		InputStream gis = new GlacierInputStream(client, getVault(), getArchiveId());
 		
 	    return manager.manageInputStream(getConnection(), gis);
 	}
 
-	public OutputStream openOutputStream(long arg0, boolean arg1)
+	public OutputStream openOutputStream(long expectedSize, boolean overwrite)
 			throws IOException, DuplicateBlobException {
 		ensureOpen();
-		
-		OutputStream os = new GlacierMultipartBufferedOutputStream(client, getVault(), blobId);
+
+	    if (!overwrite && exists())
+	      throw new DuplicateBlobException(getId());
+	    
+		OutputStream os = new GlacierMultipartBufferedOutputStream(connection, getVault(), blobId);
 	    return manager.manageOutputStream(getConnection(), os);
 	}
 	
