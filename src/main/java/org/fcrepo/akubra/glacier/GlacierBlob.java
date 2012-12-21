@@ -35,6 +35,8 @@ public class GlacierBlob extends AbstractBlob {
 		client.deleteArchive(new DeleteArchiveRequest()
 		.withVaultName(getVault())
 		.withArchiveId(getArchiveId()));
+		
+		connection.getGlacierInventoryManager().remove(blobId);
 	}
 
 	public boolean exists() throws IOException {

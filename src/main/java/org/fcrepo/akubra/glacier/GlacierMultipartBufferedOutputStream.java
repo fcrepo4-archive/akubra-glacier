@@ -62,6 +62,8 @@ public class GlacierMultipartBufferedOutputStream extends OutputStream {
 		     .withChecksum(getUploadChecksum());
 		CompleteMultipartUploadResult response = glacier.completeMultipartUpload(request);
 		this.archiveId = response.getArchiveId();
+		
+		connection.getGlacierInventoryManager().put(blobId, new GlacierInventoryObject(glacier, this.archiveId));
 	}
     private String getUploadChecksum() {
     	return TreeHashGenerator.calculateTreeHash(binaryChecksums);
