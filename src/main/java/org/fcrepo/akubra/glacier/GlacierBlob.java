@@ -40,7 +40,7 @@ public class GlacierBlob extends AbstractBlob {
 	}
 
 	public boolean exists() throws IOException {
-		return getArchiveId() != "";
+		return getArchiveId() != null;
 	}
 
 	public long getSize() throws IOException, MissingBlobException {
@@ -85,7 +85,13 @@ public class GlacierBlob extends AbstractBlob {
 	private String getArchiveId() {
 		GlacierInventoryManager im = connection.getGlacierInventoryManager();
 		
-		return im.get(blobId).getArchiveId();
+		GlacierInventoryObject obj = im.get(blobId);
+		
+		if(obj != null) {
+			return obj.getArchiveId();
+		} else {
+			return null;
+		}
 	}
 
 }
