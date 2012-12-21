@@ -44,15 +44,40 @@ public class GlacierBlob extends AbstractBlob {
 	}
 
 	public long getSize() throws IOException, MissingBlobException {
-		// TODO Auto-generated method stub
-		return 0;
+
+	    if (!exists())
+	      throw new MissingBlobException(getId());
+	    
+		GlacierInventoryObject obj = getInventoryObject();
+		return obj.getSize();
 	}
 
-	public Blob moveTo(URI arg0, Map<String, String> arg1)
+	public Blob moveTo(URI blobId, Map<String, String> hints)
 			throws DuplicateBlobException, IOException, MissingBlobException,
 			NullPointerException, IllegalArgumentException {
-		// TODO Auto-generated method stub
-		return null;
+		ensureOpen();
+		
+	    if (!exists())
+	        throw new MissingBlobException(getId());
+		
+	    GlacierBlob dest = (GlacierBlob) getConnection().getBlob(blobId, hints);
+
+	    if (dest.exists())
+	        throw new DuplicateBlobException(blobId);
+
+	    OutputStream os = dest.openOutputStream(this.getSize(), false);
+	    InputStream is = this.openInputStream();
+	    
+	    byte[] buffer = new byte[1024*1024]; // Adjust if you want
+	    int bytesRead;
+	    while ((bytesRead = is.read(buffer)) != -1)
+	    {
+	        os.write(buffer, 0, bytesRead);
+	    }
+	    
+	    this.delete();
+	    
+	    return dest;
 	}
 
 	public InputStream openInputStream() throws IOException,
@@ -82,11 +107,14 @@ public class GlacierBlob extends AbstractBlob {
 		return connection.getVault();
 	}
 	
-	private String getArchiveId() {
+	private GlacierInventoryObject getInventoryObject() {
 		GlacierInventoryManager im = connection.getGlacierInventoryManager();
 		
-		GlacierInventoryObject obj = im.get(blobId);
-		
+		return im.get(blobId);
+	}
+	
+	private String getArchiveId() {
+		GlacierInventoryObject obj = getInventoryObject();
 		if(obj != null) {
 			return obj.getArchiveId();
 		} else {
