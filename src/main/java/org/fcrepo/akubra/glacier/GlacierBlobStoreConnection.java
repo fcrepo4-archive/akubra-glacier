@@ -39,18 +39,8 @@ public class GlacierBlobStoreConnection extends AbstractBlobStoreConnection {
 		this.glacier = glacier; 
 		this.vault = vault;
 		
-		createInitialVault();
 	}
 	
-	private void createInitialVault() {
-
-		CreateVaultRequest request = new CreateVaultRequest()
-			.withAccountId("-")
-			.withVaultName(this.vault);
-		
-
-	    getGlacierClient().createVault(request);
-	}
 
 	public Blob getBlob(URI blobId, Map<String, String> arg1) throws IOException,
 			UnsupportedIdException, UnsupportedOperationException {
@@ -85,7 +75,7 @@ public class GlacierBlobStoreConnection extends AbstractBlobStoreConnection {
 	}
 	
 	public GlacierInventoryManager getGlacierInventoryManager() {
-		return new GlacierInventoryManager(glacier, vault);	
+		return ((GlacierBlobStore)this.owner).getGlacierInventoryManager();	
 	}
 	
 
