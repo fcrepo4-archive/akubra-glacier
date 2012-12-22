@@ -3,6 +3,14 @@
   <groupId>org.fcrepo</groupId>
   <artifactId>akubra-glacier</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+  
+  <name>Akubra AWS Glacier Implementation</name>
+
+  <properties>
+    <osgi.export>${groupId}.akubra.glacier.*</osgi.export>
+  </properties>
+  
+  
   <dependencies>
   	<dependency>
   		<groupId>com.amazonaws</groupId>
