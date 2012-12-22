@@ -13,12 +13,14 @@ public class GlacierInventoryObject {
 	private JSONObject properties;
 	private String archiveId;
 	private Long size;
+	private URI blobId;
 
 	public GlacierInventoryObject(JSONObject properties) {
 		this.properties = properties;
 	}
 	
-	public GlacierInventoryObject(String archiveId, Long size) {
+	public GlacierInventoryObject(URI blobId, String archiveId, Long size) {
+		this.blobId = blobId;
 		this.archiveId = archiveId;
 		this.size = size;
 	}
@@ -73,6 +75,10 @@ public class GlacierInventoryObject {
 	}
 	
 	public URI getBlobId() {
+		if(this.blobId != null) {
+			return this.blobId;
+		}
+		
 		return URI.create(getArchiveDescription());
 	}
 }
