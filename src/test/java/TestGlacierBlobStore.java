@@ -48,6 +48,8 @@ public class TestGlacierBlobStore {
 		String cs = new String(content);
 		assertEquals("asdf", cs);
 		
+		b2.delete();
+		
 		
 		
 	}
