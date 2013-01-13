@@ -5,30 +5,21 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import com.amazonaws.services.glacier.AmazonGlacierClient;
 import com.amazonaws.util.json.JSONException;
 import com.amazonaws.util.json.JSONObject;
 
 public class GlacierInventoryObject {
 	private JSONObject properties;
-	private String archiveId;
-	private Long size;
-	private URI blobId;
-
+	
+	public GlacierInventoryObject() {
+		
+	}
+	
 	public GlacierInventoryObject(JSONObject properties) {
 		this.properties = properties;
 	}
-	
-	public GlacierInventoryObject(URI blobId, String archiveId, Long size) {
-		this.blobId = blobId;
-		this.archiveId = archiveId;
-		this.size = size;
-	}
 
 	public String getArchiveId() {
-		if(this.archiveId != null) {
-			return this.archiveId;
-		}
 		
 		try {
 			return properties.getString("ArchiveId");
@@ -53,9 +44,6 @@ public class GlacierInventoryObject {
 	}
 	
 	public long getSize() {
-		if(this.size != null) {
-			return this.size;
-		}
 		
 		try {
 			return properties.getLong("Size");
@@ -75,9 +63,6 @@ public class GlacierInventoryObject {
 	}
 	
 	public URI getBlobId() {
-		if(this.blobId != null) {
-			return this.blobId;
-		}
 		
 		return URI.create(getArchiveDescription());
 	}
