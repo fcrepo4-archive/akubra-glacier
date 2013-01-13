@@ -1,28 +1,22 @@
 package org.fcrepo.akubra.glacier;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
-import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.glacier.AmazonGlacierClient;
-import com.amazonaws.services.glacier.model.DescribeJobRequest;
-import com.amazonaws.services.glacier.model.DescribeJobResult;
-import com.amazonaws.services.glacier.model.GetJobOutputRequest;
-import com.amazonaws.services.glacier.model.GetJobOutputResult;
-import com.amazonaws.services.glacier.model.InitiateJobRequest;
-import com.amazonaws.services.glacier.model.InitiateJobResult;
-import com.amazonaws.services.glacier.model.JobParameters;
-import com.amazonaws.util.json.JSONArray;
-import com.amazonaws.util.json.JSONException;
-import com.amazonaws.util.json.JSONObject;
-
+/***
+ * The GlacierInventoryManager maps Akubra BlobIds to Glacier metadata
+ * 
+ * @author cabeer
+ */
 public class GlacierInventoryManager extends HashMap<URI, GlacierInventoryObject> {
 	private static final long serialVersionUID = -7742970047429355444L;
 	private AmazonGlacierClient glacier;
@@ -32,7 +26,7 @@ public class GlacierInventoryManager extends HashMap<URI, GlacierInventoryObject
 	public GlacierInventoryManager(AmazonGlacierClient glacier, String vault) {
 		this.glacier = glacier;
 		this.vault = vault;
-		initializeBlobIdToGlacierInventoryHash();
+		updateGlacierInventory();
 	}
 	
 	public void clear() {
@@ -46,8 +40,8 @@ public class GlacierInventoryManager extends HashMap<URI, GlacierInventoryObject
 		return hash.containsKey(key);
 	}
 	
-	public boolean containsVault(GlacierInventoryObject value) {
-		return hash.containsKey(value);
+	public boolean containsValue(GlacierInventoryObject value) {
+		return hash.containsValue(value);
 	}
 	
 	public Set<Map.Entry<URI,GlacierInventoryObject>> entrySet() {
@@ -85,71 +79,31 @@ public class GlacierInventoryManager extends HashMap<URI, GlacierInventoryObject
 	public Collection<GlacierInventoryObject> values() {
 		return hash.values();
 	}
-  
-	private void initializeBlobIdToGlacierInventoryHash() {
-        InputStream is = lastAvailableInventory();
-        
-        HashMap<URI, GlacierInventoryObject> new_hash = new HashMap<URI, GlacierInventoryObject>();
-	
-        try {
-        	byte[] bytes = null;
-        	
-        	bytes = new byte[is.available()];
-        	is.read(bytes);
-        	
-        	String resultString = new String(bytes);
-        	JSONObject json = new JSONObject(resultString);
-        	JSONArray archives = json.getJSONArray("ArchiveList");
+	  
+	private void updateGlacierInventory() {
+		GlacierInventoryRequest request = new GlacierInventoryRequest(glacier, vault);
 		
-        	for ( int i = 0; i < archives.length(); i++ ) {
-        		JSONObject j = archives.getJSONObject(i);
-        		GlacierInventoryObject gio = new GlacierInventoryObject(j);
-            	new_hash.put(URI.create(j.getString("ArchiveDescription")), gio);
-        	}
-		
-        } catch (JSONException e) {
-        } catch (IOException e) {
-        }
-	
-        this.hash = new_hash;
-	}
-	
-	private InputStream lastAvailableInventory() {
-		return retrieveInventoryFromGlacier();
-	}
-	
-	private InputStream retrieveInventoryFromGlacier() {
-		JobParameters jobParameters = new JobParameters()
-		.withType("inventory-retrieval");
-	InitiateJobResult archiveRetrievalResult =
-		glacier.initiateJob(new InitiateJobRequest()
-			.withVaultName(vault)
-			.withJobParameters(jobParameters));
-	String jobId = archiveRetrievalResult.getJobId();
-
-	waitForJobToComplete(jobId);
-	GetJobOutputResult jobOutputResult = glacier.getJobOutput(new GetJobOutputRequest()
-		.withVaultName(vault)
-		.withJobId(jobId));
-	
-	return jobOutputResult.getBody();
-	}
-
-	private void waitForJobToComplete(String jobId) {
-		while(true) {
-    		DescribeJobResult result = glacier.describeJob(new DescribeJobRequest()
-				.withJobId(jobId)
-				.withVaultName(vault));
-    		
-    		if (result.getCompleted()) return;
+		ExecutorService executor = Executors.newFixedThreadPool(1);
+			
+		Future<HashMap<URI, GlacierInventoryObject>> submit = executor.submit(request);
+			
 		try {
-    		Thread.sleep(1000*1);
-		} catch (InterruptedException ie) {
-			throw new AmazonClientException("Inventory download interrupted", ie);
+			HashMap<URI, GlacierInventoryObject> old_hash = this.hash;
+			this.hash = submit.get();
+			
+			if(old_hash != null) {
+				for(Entry<URI, GlacierInventoryObject> entry : old_hash.entrySet()) {
+					if(!this.hash.containsKey(entry.getKey()) && entry.getValue() instanceof TransientGlacierInventoryObject) {
+						this.hash.put(entry.getKey(), entry.getValue());
+					}
+				}
+			}
+			
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			e.printStackTrace();
 		}
-		}
-		
-		
 	}
 
 }
