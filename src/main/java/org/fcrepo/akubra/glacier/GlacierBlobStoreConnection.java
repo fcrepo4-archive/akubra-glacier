@@ -1,7 +1,6 @@
 package org.fcrepo.akubra.glacier;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -13,20 +12,7 @@ import org.akubraproject.UnsupportedIdException;
 import org.akubraproject.impl.AbstractBlobStoreConnection;
 import org.akubraproject.impl.StreamManager;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.auth.PropertiesCredentials;
 import com.amazonaws.services.glacier.AmazonGlacierClient;
-import com.amazonaws.services.glacier.model.CreateVaultRequest;
-import com.amazonaws.services.glacier.model.DescribeJobRequest;
-import com.amazonaws.services.glacier.model.DescribeJobResult;
-import com.amazonaws.services.glacier.model.GetJobOutputRequest;
-import com.amazonaws.services.glacier.model.GetJobOutputResult;
-import com.amazonaws.services.glacier.model.InitiateJobRequest;
-import com.amazonaws.services.glacier.model.InitiateJobResult;
-import com.amazonaws.services.glacier.model.JobParameters;
-import com.amazonaws.util.json.JSONArray;
-import com.amazonaws.util.json.JSONException;
-import com.amazonaws.util.json.JSONObject;
 
 public class GlacierBlobStoreConnection extends AbstractBlobStoreConnection {
 
