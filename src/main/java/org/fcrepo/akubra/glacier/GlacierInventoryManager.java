@@ -1,11 +1,15 @@
 package org.fcrepo.akubra.glacier;
 
+import java.io.IOException;
+import java.io.Serializable;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -17,7 +21,7 @@ import com.amazonaws.services.glacier.AmazonGlacierClient;
  * 
  * @author cabeer
  */
-public class GlacierInventoryManager extends HashMap<URI, GlacierInventoryObject> {
+public class GlacierInventoryManager extends HashMap<URI, GlacierInventoryObject> implements Serializable {
 	private static final long serialVersionUID = -7742970047429355444L;
 	private AmazonGlacierClient glacier;
 	private String vault;
@@ -79,13 +83,19 @@ public class GlacierInventoryManager extends HashMap<URI, GlacierInventoryObject
 	public Collection<GlacierInventoryObject> values() {
 		return hash.values();
 	}
+	
+	public void asyncUpdateGlacierInventory() {
+		final GlacierInventoryManager i = this;
+		Executors.newSingleThreadExecutor().submit(new Callable<Boolean>() {
+	         public Boolean call() { i.updateGlacierInventory(); return true; }
+	     });
+		
+	}
 	  
-	private void updateGlacierInventory() {
+	public void updateGlacierInventory() {
 		GlacierInventoryRequest request = new GlacierInventoryRequest(glacier, vault);
 		
-		ExecutorService executor = Executors.newFixedThreadPool(1);
-			
-		Future<HashMap<URI, GlacierInventoryObject>> submit = executor.submit(request);
+		Future<HashMap<URI, GlacierInventoryObject>> submit = Executors.newSingleThreadExecutor().submit(request);
 			
 		try {
 			HashMap<URI, GlacierInventoryObject> old_hash = this.hash;
@@ -106,4 +116,26 @@ public class GlacierInventoryManager extends HashMap<URI, GlacierInventoryObject
 		}
 	}
 
+	private void readObject(java.io.ObjectInputStream ois)  throws IOException, ClassNotFoundException {
+		@SuppressWarnings("unchecked")
+		ArrayList<GlacierInventoryObject> list = (ArrayList<GlacierInventoryObject>) ois.readObject();
+		 
+		for(GlacierInventoryObject e : list) {
+			this.put(e.getBlobId(), e);
+		}	
+		 
+		asyncUpdateGlacierInventory();
+	}
+	
+	private void writeObject(java.io.ObjectOutputStream oos) throws IOException {
+		ArrayList<TransientGlacierInventoryObject> c = new ArrayList<TransientGlacierInventoryObject>();
+		
+		for(GlacierInventoryObject e : values()) {
+			c.add(e.getSerializableObject());
+		}
+		
+		oos.writeObject(c);
+
+		oos.close(); 
+	}
 }
