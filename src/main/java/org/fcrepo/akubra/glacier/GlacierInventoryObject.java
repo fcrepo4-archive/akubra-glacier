@@ -9,6 +9,10 @@ import com.amazonaws.util.json.JSONException;
 import com.amazonaws.util.json.JSONObject;
 
 public class GlacierInventoryObject {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1123168261007582925L;
 	private JSONObject properties;
 	
 	public GlacierInventoryObject() {
@@ -63,7 +67,11 @@ public class GlacierInventoryObject {
 	}
 	
 	public URI getBlobId() {
-		
 		return URI.create(getArchiveDescription());
 	}
+	
+	public TransientGlacierInventoryObject getSerializableObject() {
+		return new TransientGlacierInventoryObject(getBlobId(), getArchiveId(), getSize());
+	}
+
 }

@@ -37,4 +37,8 @@ public class TransientGlacierInventoryObject extends GlacierInventoryObject {
 	public URI getBlobId() {
 		return this.blobId;
 	}
+	
+	public TransientGlacierInventoryObject getSerializableObject() {
+		return this;
+	}
 }
