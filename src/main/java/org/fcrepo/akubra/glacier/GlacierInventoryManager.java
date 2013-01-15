@@ -1,6 +1,11 @@
 package org.fcrepo.akubra.glacier;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
@@ -27,10 +32,14 @@ public class GlacierInventoryManager extends HashMap<URI, GlacierInventoryObject
 	private String vault;
 	private HashMap<URI, GlacierInventoryObject> hash;
 	
+	private boolean ready;
 	public GlacierInventoryManager(AmazonGlacierClient glacier, String vault) {
 		this.glacier = glacier;
 		this.vault = vault;
-		updateGlacierInventory();
+		this.hash = new HashMap<URI, GlacierInventoryObject>();
+		this.ready = false;
+		readInventoryFromCache();
+		this.ready = true;
 	}
 	
 	public void clear() {
@@ -65,15 +74,19 @@ public class GlacierInventoryManager extends HashMap<URI, GlacierInventoryObject
 	}
 	
 	public GlacierInventoryObject put(URI key, GlacierInventoryObject value) {
-		return hash.put(key, value);
+		GlacierInventoryObject obj = hash.put(key, value);
+		dumpInventoryToCache();
+		return obj;
 	}
 	
 	public void putAll(Map<? extends URI, ? extends GlacierInventoryObject>  t) {
 		hash.putAll(t);
+		dumpInventoryToCache();
 	}
 	
 	public void remove(URI key) {
 		hash.remove(key);
+		dumpInventoryToCache();
 	}
 	
 	public int size() {
@@ -97,45 +110,93 @@ public class GlacierInventoryManager extends HashMap<URI, GlacierInventoryObject
 		
 		Future<HashMap<URI, GlacierInventoryObject>> submit = Executors.newSingleThreadExecutor().submit(request);
 			
-		try {
 			HashMap<URI, GlacierInventoryObject> old_hash = this.hash;
-			this.hash = submit.get();
-			
-			if(old_hash != null) {
-				for(Entry<URI, GlacierInventoryObject> entry : old_hash.entrySet()) {
-					if(!this.hash.containsKey(entry.getKey()) && entry.getValue() instanceof TransientGlacierInventoryObject) {
-						this.hash.put(entry.getKey(), entry.getValue());
+			try {
+				this.hash = submit.get();
+				if(old_hash != null) {
+					for(Entry<URI, GlacierInventoryObject> entry : old_hash.entrySet()) {
+						if(!this.hash.containsKey(entry.getKey()) && entry.getValue() instanceof TransientGlacierInventoryObject) {
+							this.hash.put(entry.getKey(), entry.getValue());
+						}
 					}
 				}
+
+			
+			dumpInventoryToCache();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 			
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		} catch (ExecutionException e) {
+	}
+	
+	private void dumpInventoryToCache() {
+		if(this.ready == false) {
+			return;
+		}
+		
+		// dump our data object
+		try {
+			System.out.println("dumping inventory");
+			ArrayList<TransientGlacierInventoryObject> c = new ArrayList<TransientGlacierInventoryObject>();
+			
+			for(GlacierInventoryObject e : values()) {
+				System.out.println("dumping " + e.getSerializableObject().toString());
+				c.add(e.getSerializableObject());
+			}
+			
+			
+			FileOutputStream f_out = new 
+					FileOutputStream(getInventorySerializationFilename());
+			ObjectOutputStream obj_out = new
+					ObjectOutputStream (f_out);
+			obj_out.writeObject( c );
+		} catch (FileNotFoundException e) {
+			return;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
+	
+	private void readInventoryFromCache() {
+		// Read from disk using FileInputStream
 
-	private void readObject(java.io.ObjectInputStream ois)  throws IOException, ClassNotFoundException {
-		@SuppressWarnings("unchecked")
-		ArrayList<GlacierInventoryObject> list = (ArrayList<GlacierInventoryObject>) ois.readObject();
-		 
-		for(GlacierInventoryObject e : list) {
-			this.put(e.getBlobId(), e);
-		}	
-		 
+		Object obj = null;
+		try {
+			FileInputStream f_in = new 
+				FileInputStream(getInventorySerializationFilename());
+			ObjectInputStream obj_in = new ObjectInputStream (f_in);
+			obj = obj_in.readObject();
+		} catch (FileNotFoundException e3) {
+			// TODO Auto-generated catch block
+			e3.printStackTrace();
+		} catch (IOException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		} catch (ClassNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		if ( obj instanceof ArrayList<?>) {
+			 
+			for(Object e : ((ArrayList<?>) obj)) {
+				if ( e instanceof GlacierInventoryObject ) {
+					this.put(((GlacierInventoryObject)e).getBlobId(), (GlacierInventoryObject)e);
+				}
+			}	
+		}
+		
 		asyncUpdateGlacierInventory();
 	}
 	
-	private void writeObject(java.io.ObjectOutputStream oos) throws IOException {
-		ArrayList<TransientGlacierInventoryObject> c = new ArrayList<TransientGlacierInventoryObject>();
-		
-		for(GlacierInventoryObject e : values()) {
-			c.add(e.getSerializableObject());
-		}
-		
-		oos.writeObject(c);
-
-		oos.close(); 
+	private String getInventorySerializationFilename() {
+		return "glacier-inventory-" + vault + ".data";
 	}
+
+
 }

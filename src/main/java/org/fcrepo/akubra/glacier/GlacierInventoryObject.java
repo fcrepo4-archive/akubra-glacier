@@ -13,6 +13,13 @@ public class GlacierInventoryObject {
 	 * 
 	 */
 	private static final long serialVersionUID = -1123168261007582925L;
+	@Override
+	public String toString() {
+		return "GlacierInventoryObject [getArchiveId()=" + getArchiveId()
+				+ ", getCreationDate()=" + getCreationDate() + ", getSize()="
+				+ getSize() + ", getBlobId()=" + getBlobId() + "]";
+	}
+
 	private JSONObject properties;
 	
 	public GlacierInventoryObject() {

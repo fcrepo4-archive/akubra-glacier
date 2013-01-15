@@ -1,10 +1,16 @@
 package org.fcrepo.akubra.glacier;
 
+import java.io.IOException;
+import java.io.Serializable;
 import java.net.URI;
 import java.util.Date;
 
-public class TransientGlacierInventoryObject extends GlacierInventoryObject {
+public class TransientGlacierInventoryObject extends GlacierInventoryObject implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7597557003012939729L;
 	private String archiveId;
 	private Long size;
 	private URI blobId;
@@ -40,5 +46,13 @@ public class TransientGlacierInventoryObject extends GlacierInventoryObject {
 	
 	public TransientGlacierInventoryObject getSerializableObject() {
 		return this;
+	}
+	
+	private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
+		stream.defaultWriteObject();
+	}
+	
+	private void readObject(java.io.ObjectInputStream stream) throws IOException, ClassNotFoundException {
+		stream.defaultReadObject();
 	}
 }

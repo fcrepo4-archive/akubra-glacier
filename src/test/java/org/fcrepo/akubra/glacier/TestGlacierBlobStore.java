@@ -1,3 +1,4 @@
+package org.fcrepo.akubra.glacier;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
