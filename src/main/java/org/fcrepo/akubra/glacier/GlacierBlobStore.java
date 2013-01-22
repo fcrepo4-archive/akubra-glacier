@@ -24,7 +24,8 @@ public class GlacierBlobStore extends AbstractBlobStore {
 	private BlobStore m_synchronousStore;
 
     public static String STORAGE_HINT_VALUE_GLACIER = "aws-glacier";
-    public static String STORAGE_HINT_KEY = "org.fcrepo.futures.store";
+    public static String STORAGE_HINT_KEY = "org.fcrepo.futures.storage.store";
+    public static String DS_ID_KEY = "org.fcrepo.futures.storage.id";
 
 	public GlacierBlobStore(URI id, AmazonGlacierClient glacier, String vault) {
 		super(id);
@@ -43,8 +44,17 @@ public class GlacierBlobStore extends AbstractBlobStore {
 			Map<String, String> hints) throws UnsupportedOperationException,
 			IOException {
 	    if (m_synchronousStore != null) {
-	        if (hints != null && STORAGE_HINT_VALUE_GLACIER.equals(hints.get(STORAGE_HINT_KEY))){
-	            return new GlacierBlobStoreConnection(this, glacier, vault, manager);
+	        if (hints != null) {
+	        	if (STORAGE_HINT_VALUE_GLACIER.equals(hints.get(STORAGE_HINT_KEY))){
+		            return new GlacierBlobStoreConnection(this, glacier, vault, manager);
+                } else {
+                	if (hints.get(DS_ID_KEY) != null &&
+                		managesId(URI.create(hints.get(DS_ID_KEY)))) {
+    		            return new GlacierBlobStoreConnection(this, glacier, vault, manager);
+                	} else {
+        	            return m_synchronousStore.openConnection(tx, hints);
+                	}
+                }
 	        }
 	        else {
 	            return m_synchronousStore.openConnection(tx, hints);
@@ -53,6 +63,10 @@ public class GlacierBlobStore extends AbstractBlobStore {
 	    else {
 	        return new GlacierBlobStoreConnection(this, glacier, vault, manager);
 	    }
+	}
+	
+	public GlacierBlobStoreConnection openGlacierConnection() {
+        return new GlacierBlobStoreConnection(this, glacier, vault, manager);
 	}
 
 
@@ -68,6 +82,10 @@ public class GlacierBlobStore extends AbstractBlobStore {
 
 	public GlacierInventoryManager getGlacierInventoryManager() {
 		return inventory_manager;
+	}
+	
+	public boolean managesId(URI id) {
+		return inventory_manager.containsKey(id);
 	}
 
 }
